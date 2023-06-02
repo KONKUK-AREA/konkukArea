@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 848409ee8ba454f42a5ddff137688a27, type: 3}
+  m_Name: MultipleReferenceImage
+  m_EditorClassIdentifier: 
+  m_GuidLow: 4661723173084773904
+  m_GuidHigh: 1701715000421943200
+  m_DataStore:
+    m_Storage: []
+  m_Images:
+  - m_SerializedGuid:
+      m_GuidLow: 5672253234103083936
+      m_GuidHigh: 2439247533912810416
+    m_SerializedTextureGuid:
+      m_GuidLow: 15196430850073299388
+      m_GuidHigh: 15612394581029483529
+    m_Size: {x: 0.2, y: 0.2}
+    m_SpecifySize: 1
+    m_Name: KU_QR1
+    m_Texture: {fileID: 0}
+  - m_SerializedGuid:
+      m_GuidLow: 5505315353189920555
+      m_GuidHigh: 11608983906940172932
+    m_SerializedTextureGuid:
+      m_GuidLow: 8567166836454223658
+      m_GuidHigh: 10854456089090838232
+    m_Size: {x: 0.085, y: 0.05212131}
+    m_SpecifySize: 1
+    m_Name: KU_QR2
+    m_Texture: {fileID: 0}
