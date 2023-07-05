@@ -7,10 +7,15 @@ public class MultipleImageTracker : MonoBehaviour
 {
     private ARTrackedImageManager trackedImageManager;
 
-    [SerializeField] // private 이어도 유니티 인스펙터 창에 변수가뜨게해줌
+    [SerializeField] // private 이어도 유니티 인스펙터 창에 변수가 뜨게 해 줌
     private GameObject[] placeablePrefabs;
 
-
+    [Header("UI")]
+    [SerializeField]
+    private GameObject KUMsg;
+    [SerializeField]
+    private GameObject[] Btns; 
+    private bool isFirstSpawn = true;
     private Dictionary<string, GameObject> spanwedObjects;
 
     private void Awake () 
@@ -31,12 +36,11 @@ public class MultipleImageTracker : MonoBehaviour
     }
         void UpdateSpawnObject(ARTrackedImage trackedImage)
     {
-        string referenceImageName = trackedImage.referenceImage.name;                     // 레퍼런스 이미지와 불러올 오브젝트의 string이름이 같아야 불러오게 됨
+        string referenceImageName = trackedImage.referenceImage.name;   // 레퍼런스 이미지와 불러올 오브젝트의 string이름이 같아야 불러오게 됨
         spanwedObjects[referenceImageName].transform.position = trackedImage.transform.position;        
         spanwedObjects[referenceImageName].transform.rotation = trackedImage.transform.rotation;
 
         spanwedObjects[referenceImageName].SetActive(true); 
-
 
     }
 
@@ -47,6 +51,12 @@ public class MultipleImageTracker : MonoBehaviour
 
     void OnTrackedImageChanged(ARTrackedImagesChangedEventArgs eventArgs)
     {
+        if(isFirstSpawn){
+            KUMsg.SetActive(false);
+            Btns[0].SetActive(true);
+            Btns[1].SetActive(true);
+            isFirstSpawn = false;
+        }
         foreach(ARTrackedImage trackedImage in eventArgs.added)
         {
             UpdateSpawnObject(trackedImage);
