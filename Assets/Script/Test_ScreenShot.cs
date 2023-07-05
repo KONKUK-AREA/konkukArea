@@ -22,6 +22,7 @@ namespace Rito.Tests
         public Button screenShotButton;          // 전체 화면 캡쳐
         public Button screenShotWithoutUIButton; // UI 제외 화면 캡쳐
         public Button readAndShowButton; // 저장된 경로에서 스크린샷 파일 읽어와서 이미지에 띄우기
+        public Button openGallery;      // 갤러리 앱 열기
         public Image imageToShow;        // 띄울 이미지 컴포넌트
 
         public ScreenShotFlash flash;
@@ -66,13 +67,14 @@ namespace Rito.Tests
             screenShotButton.onClick.AddListener(TakeScreenShotFull);
             screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
             readAndShowButton.onClick.AddListener(ReadScreenShotAndShow);
+            openGallery.onClick.AddListener(OpenGalleryApp);
         }
         #endregion
         /***********************************************************************
         *                               Button Event Handlers
         ***********************************************************************/
         #region .
-        //UI 포함 전체 화면 캡쳐
+        // UI 포함 전체 화면 캡쳐
         private void TakeScreenShotFull()
         {
 #if UNITY_ANDROID
@@ -82,7 +84,7 @@ namespace Rito.Tests
 #endif
         }
 
-        //UI 미포함, 현재 카메라가 렌더링하는 화면만 캡쳐
+        // UI 미포함, 현재 카메라가 렌더링하는 화면만 캡쳐
         private void TakeScreenShotWithoutUI()
         {
 #if UNITY_ANDROID
@@ -92,6 +94,7 @@ namespace Rito.Tests
 #endif
         }
 
+        // 스크린샷 띄워주기
         private void ReadScreenShotAndShow()
         {
 #if UNITY_ANDROID
@@ -99,6 +102,19 @@ namespace Rito.Tests
 #else
             ReadScreenShotFileAndShow(imageToShow);
 #endif
+        }
+
+        // 갤러리 앱 열기
+        private void OpenGalleryApp()
+        {
+            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject unityActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            AndroidJavaClass intentStaticClass = new AndroidJavaClass("android.content.Intent");
+            string actionView = intentStaticClass.GetStatic<string>("ACTION_VIEW");
+            AndroidJavaClass uriClass = new AndroidJavaClass("android.net.Uri");
+            AndroidJavaObject uriObject = uriClass.CallStatic<AndroidJavaObject>("parse", "content://media/external/images/media");
+            AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent", actionView, uriObject);
+            unityActivity.Call("startActivity", intent);
         }
         #endregion
         /***********************************************************************
