@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 using System.IO;
+using UnityEngine.XR.ARSubsystems;
 
 //Window, Android, iOS 환경에 따라 추가 및 수정하기
 #if UNITY_ANDROID
@@ -22,9 +23,12 @@ namespace Rito.Tests
         public Button screenShotButton;          // 전체 화면 캡쳐
         public Button screenShotWithoutUIButton; // UI 제외 화면 캡쳐
         public Button readAndShowButton; // 저장된 경로에서 스크린샷 파일 읽어와서 이미지에 띄우기
+        public Button openGallery;      // 갤러리 앱 열기
         public Image imageToShow;        // 띄울 이미지 컴포넌트
 
         public ScreenShotFlash flash;
+
+        public int CameraRatio = 0; // 카메라 비율 관리 변수
 
         public string folderName = "ScreenShots";
         public string fileName = "MyScreenShot";
@@ -38,7 +42,6 @@ namespace Rito.Tests
         #region .
         private Texture2D _imageTexture; // imageToShow의 소스 텍스쳐
 
-        public int CameraRatio = 0;
         private string RootPath
         {
             get
@@ -53,7 +56,7 @@ namespace Rito.Tests
         }
         private string FolderPath => $"{RootPath}/{folderName}";
         private string TotalPath => $"{FolderPath}/{fileName}_{DateTime.Now.ToString("MMdd_HHmmss")}.{extName}";
-
+       
         private string lastSavedPath;
 
         #endregion
@@ -67,13 +70,14 @@ namespace Rito.Tests
             screenShotButton.onClick.AddListener(TakeScreenShotFull);
             screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
             readAndShowButton.onClick.AddListener(ReadScreenShotAndShow);
+            openGallery.onClick.AddListener(OpenGalleryApp);
         }
         #endregion
         /***********************************************************************
         *                               Button Event Handlers
         ***********************************************************************/
         #region .
-        //UI 포함 전체 화면 캡쳐
+        // UI 포함 전체 화면 캡쳐
         private void TakeScreenShotFull()
         {
 #if UNITY_ANDROID
@@ -83,7 +87,7 @@ namespace Rito.Tests
 #endif
         }
 
-        //UI 미포함, 현재 카메라가 렌더링하는 화면만 캡쳐
+        // UI 미포함, 현재 카메라가 렌더링하는 화면만 캡쳐
         private void TakeScreenShotWithoutUI()
         {
 #if UNITY_ANDROID
@@ -93,6 +97,7 @@ namespace Rito.Tests
 #endif
         }
 
+        // 스크린샷 띄워주기
         private void ReadScreenShotAndShow()
         {
 #if UNITY_ANDROID
@@ -100,6 +105,21 @@ namespace Rito.Tests
 #else
             ReadScreenShotFileAndShow(imageToShow);
 #endif
+        }
+        string OpenPath;
+
+        // 갤러리 앱 열기
+        private void OpenGalleryApp()
+        {
+
+            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject unityActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            AndroidJavaClass intentStaticClass = new AndroidJavaClass("android.content.Intent");
+            string actionView = intentStaticClass.GetStatic<string>("ACTION_VIEW");
+            AndroidJavaClass uriClass = new AndroidJavaClass("android.net.Uri");
+            AndroidJavaObject uriObject = uriClass.CallStatic<AndroidJavaObject>("parse", "content://media/external/images/media");
+            AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent", actionView, uriObject);
+            unityActivity.Call("startActivity", intent);
         }
         #endregion
         /***********************************************************************
@@ -154,23 +174,25 @@ namespace Rito.Tests
         //스크린샷을 찍고 경로에 저장하기
         private void CaptureScreenAndSave()
         {
-            string totalPath = TotalPath; // 프로퍼티 참조 시 시간에 따라 이름이 결정되므로 캐싱
-            int width,height=0; // 사진 가로, 세로
+            int width, height = 0; // 사진 가로, 세로
             width = Screen.width;
-            switch(CameraRatio){
+
+            switch (CameraRatio)
+            {
                 case 0: // 16:9
-                    height = (int)(width * (16f/9f)); break;
+                    height = (int)(width * (16f / 9f)); break;
                 case 1: // 4: 3
-                    height = (int)(width * (4f/3f)); break;
+                    height = (int)(width * (4f / 3f)); break;
                 case 2: // 정방
                     height = width; break;
                 case 3: // full
                     height = Screen.height; break;
             }
-            
+            int PosY = (Screen.height - height)/2;
+            string totalPath = TotalPath; // 프로퍼티 참조 시 시간에 따라 이름이 결정되므로 캐싱
             Texture2D screenTex = new Texture2D(width, height, TextureFormat.RGB24, false);
-            Rect area = new Rect(0f, 0f,width,height);
-
+            Rect area = new Rect(0f, PosY, width, height);
+            Debug.Log(area);
             // 현재 스크린으로부터 지정 영역의 픽셀들을 텍스쳐에 저장
             screenTex.ReadPixels(area, 0, 0);
 
@@ -205,6 +227,7 @@ namespace Rito.Tests
 
             // 갤러리 갱신
             RefreshAndroidGallery(totalPath);
+            ReadScreenShotAndShow();
         }
 
         [System.Diagnostics.Conditional("UNITY_ANDROID")]
@@ -257,6 +280,7 @@ namespace Rito.Tests
             }
             catch (Exception e)
             {
+
                 Debug.LogWarning($"스크린샷 파일을 읽는 데 실패하였습니다.");
                 Debug.LogWarning(e);
                 return;

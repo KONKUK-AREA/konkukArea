@@ -1,3 +1,4 @@
+using Rito.Tests;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,7 +15,7 @@ public class MultipleImageTracker : MonoBehaviour
     [SerializeField]
     private GameObject KUMsg;
     [SerializeField]
-    private GameObject[] Btns; 
+    private GameObject[] Btns;
     private bool isFirstSpawn = true;
     private Dictionary<string, GameObject> spanwedObjects;
 
@@ -42,6 +43,7 @@ public class MultipleImageTracker : MonoBehaviour
 
         spanwedObjects[referenceImageName].SetActive(true); 
 
+
     }
 
 
@@ -51,13 +53,17 @@ public class MultipleImageTracker : MonoBehaviour
 
     void OnTrackedImageChanged(ARTrackedImagesChangedEventArgs eventArgs)
     {
-        if(isFirstSpawn){
+        if (isFirstSpawn&& KUMsg.activeSelf)
+        {
+            foreach(GameObject obj in Btns)
+            {
+                obj.SetActive(true);
+            }
             KUMsg.SetActive(false);
-            Btns[0].SetActive(true);
-            Btns[1].SetActive(true);
+            GameObject.Find("Canvas").GetComponent<ChangeRatio>().SetSetting();
             isFirstSpawn = false;
         }
-        foreach(ARTrackedImage trackedImage in eventArgs.added)
+        foreach (ARTrackedImage trackedImage in eventArgs.added)
         {
             UpdateSpawnObject(trackedImage);
 
