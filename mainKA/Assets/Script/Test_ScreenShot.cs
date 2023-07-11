@@ -5,6 +5,12 @@ using UnityEngine.UI;
 using System;
 using System.IO;
 using UnityEngine.XR.ARSubsystems;
+using System.Linq;
+using UnityEditor;
+using UnityEngine.Networking;
+using UnityEngine.EventSystems;
+
+
 
 //Window, Android, iOS 환경에 따라 추가 및 수정하기
 #if UNITY_ANDROID
@@ -12,8 +18,10 @@ using UnityEngine.Android;
 #endif
 
 
+
 namespace Rito.Tests
 {
+    
     public class Test_ScreenShot : MonoBehaviour
     {
         /***********************************************************************
@@ -25,23 +33,29 @@ namespace Rito.Tests
         public Button readAndShowButton; // 저장된 경로에서 스크린샷 파일 읽어와서 이미지에 띄우기
         public Button openGallery;      // 갤러리 앱 열기
         public Image imageToShow;        // 띄울 이미지 컴포넌트
-
+        public Image galleryToShow;
         public ScreenShotFlash flash;
 
         public int CameraRatio = 0; // 카메라 비율 관리 변수
-
         public string folderName = "ScreenShots";
         public string fileName = "MyScreenShot";
         public string extName = "png";
 
         private bool _willTakeScreenShot = false;
+        private Stack<string> ShotImages = new Stack<string>();
+        private string[] ShotImagesArray;
         #endregion
         /***********************************************************************
         *                               Fields & Properties
         ***********************************************************************/
         #region .
         private Texture2D _imageTexture; // imageToShow의 소스 텍스쳐
-
+        [SerializeField]
+        private Texture2D _galleryTexture;
+        [SerializeField]
+        private GameObject Gallery;
+        [SerializeField]
+        private GameObject Menu;
         private string RootPath
         {
             get
@@ -70,7 +84,8 @@ namespace Rito.Tests
             screenShotButton.onClick.AddListener(TakeScreenShotFull);
             screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
             readAndShowButton.onClick.AddListener(ReadScreenShotAndShow);
-            openGallery.onClick.AddListener(OpenGalleryApp);
+            openGallery.onClick.AddListener(imageOpen);
+            Gallery.GetComponentInChildren<Image>().rectTransform.localScale = GameObject.Find("Canvas").GetComponent<RectTransform>().localScale;
         }
         #endregion
         /***********************************************************************
@@ -111,15 +126,18 @@ namespace Rito.Tests
         // 갤러리 앱 열기
         private void OpenGalleryApp()
         {
-
+            
             AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
             AndroidJavaObject unityActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
             AndroidJavaClass intentStaticClass = new AndroidJavaClass("android.content.Intent");
             string actionView = intentStaticClass.GetStatic<string>("ACTION_VIEW");
             AndroidJavaClass uriClass = new AndroidJavaClass("android.net.Uri");
-            AndroidJavaObject uriObject = uriClass.CallStatic<AndroidJavaObject>("parse", "content://media/external/images/media");
+            AndroidJavaObject uriObject = uriClass.CallStatic<AndroidJavaObject>("parse", "content://media/internal/images/media");
             AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent", actionView, uriObject);
             unityActivity.Call("startActivity", intent);
+            
+
+   
         }
         #endregion
         /***********************************************************************
@@ -226,6 +244,7 @@ namespace Rito.Tests
             }
 
             // 갤러리 갱신
+            ShotImages.Push(totalPath);
             RefreshAndroidGallery(totalPath);
             ReadScreenShotAndShow();
         }
@@ -249,6 +268,7 @@ namespace Rito.Tests
         {
             string folderPath = FolderPath;
             string totalPath = lastSavedPath;
+
 
             if (Directory.Exists(folderPath) == false)
             {
@@ -290,6 +310,102 @@ namespace Rito.Tests
             Rect rect = new Rect(0, 0, _imageTexture.width, _imageTexture.height);
             Sprite sprite = Sprite.Create(_imageTexture, rect, Vector2.one * 0.5f);
             destination.sprite = sprite;
+        }
+        public void imageOpen()
+        {
+            Gallery.SetActive(true);
+            Debug.Log("ShotImages : "+ShotImages);
+            ShotImagesArray = ShotImages.ToArray();
+            GalleryIndex = 0;
+            ReadScreenShotFileAndShow(galleryToShow, ShotImagesArray[0]);
+
+        }
+        int GalleryIndex;
+        public void GalleryNextImage()
+        {
+            if (GalleryIndex == ShotImagesArray.Length-1) return;
+            else
+            {
+                GalleryIndex++;
+                ReadScreenShotFileAndShow(galleryToShow, ShotImagesArray[GalleryIndex]);
+            }
+        }
+        public void GalleryPrevImage()
+        {
+            if (GalleryIndex == 0) return;
+            else
+            {
+                GalleryIndex--;
+                ReadScreenShotFileAndShow(galleryToShow, ShotImagesArray[GalleryIndex]);
+            }
+        }
+        public void GalleryExit()
+        {
+            Gallery.SetActive(false);
+        }
+        private void ReadScreenShotFileAndShow(Image destination, string path)
+        {
+            string folderPath = FolderPath;
+            string totalPath = path;
+
+
+            // 기존의 텍스쳐 소스 제거
+            if (_galleryTexture != null)
+                Destroy(_galleryTexture);
+            if (destination.sprite != null)
+            {
+                Destroy(destination.sprite);
+                destination.sprite = null;
+            }
+
+            // 저장된 스크린샷 파일 경로로부터 읽어오기
+            try
+            {
+                byte[] texBuffer = File.ReadAllBytes(totalPath);
+
+                _galleryTexture = new Texture2D(1, 1, TextureFormat.RGB24, false);
+                _galleryTexture.LoadImage(texBuffer);
+            }
+            catch (Exception e)
+            {
+
+                Debug.LogWarning($"스크린샷 파일을 읽는 데 실패하였습니다.");
+                Debug.LogWarning(e);
+                return;
+            }
+
+            // 이미지 스프라이트에 적용
+            Rect rect = new Rect(0, 0, _galleryTexture.width, _galleryTexture.height);
+            Sprite sprite = Sprite.Create(_galleryTexture, rect, Vector2.one * 0.5f);
+            destination.sprite = sprite;
+            destination.SetNativeSize();
+        }
+        public void ShareImage()
+        {
+            string path = ShotImagesArray[GalleryIndex];
+            if (File.Exists(path))
+            {
+                new NativeShare().AddFile(path).Share();
+            }
+        }
+        public void openMenu()
+        {
+            GameObject button = EventSystem.current.currentSelectedGameObject;
+            if (!Menu.activeSelf)
+            {
+                Menu .SetActive(true);
+                button.transform.localEulerAngles = new Vector3(0, 0, 0);
+            }
+            else
+            {
+                Menu.SetActive(false);
+                button.transform.localEulerAngles = new Vector3(0, 0, 90);
+
+            }
+        }
+        public void KUScale(int scale)
+        {
+            GameObject.Find("KU_QR1").transform.localScale = new Vector3(0.5f + 0.5f * scale, 0.5f + 0.5f * scale, 0.5f + 0.5f * scale);
         }
         #endregion
     }
