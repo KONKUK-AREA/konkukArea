@@ -9,6 +9,8 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine.Networking;
 using UnityEngine.EventSystems;
+using UnityEngine.XR.ARFoundation;
+using System.Security.Cryptography;
 
 
 
@@ -42,8 +44,7 @@ namespace Rito.Tests
         public string extName = "png";
 
         private bool _willTakeScreenShot = false;
-        private Stack<string> ShotImages = new Stack<string>();
-        private string[] ShotImagesArray;
+        private PathStack ShotImages = new PathStack();
         #endregion
         /***********************************************************************
         *                               Fields & Properties
@@ -56,6 +57,7 @@ namespace Rito.Tests
         private GameObject Gallery;
         [SerializeField]
         private GameObject Menu;
+        private Camera _ARcamera;
         private string RootPath
         {
             get
@@ -85,6 +87,7 @@ namespace Rito.Tests
             screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
             readAndShowButton.onClick.AddListener(ReadScreenShotAndShow);
             openGallery.onClick.AddListener(imageOpen);
+            _ARcamera = GetComponent<Camera>();
             Gallery.GetComponentInChildren<Image>().rectTransform.localScale = GameObject.Find("Canvas").GetComponent<RectTransform>().localScale;
         }
         #endregion
@@ -315,28 +318,27 @@ namespace Rito.Tests
         {
             Gallery.SetActive(true);
             Debug.Log("ShotImages : "+ShotImages);
-            ShotImagesArray = ShotImages.ToArray();
             GalleryIndex = 0;
-            ReadScreenShotFileAndShow(galleryToShow, ShotImagesArray[0]);
+            ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
 
         }
         int GalleryIndex;
         public void GalleryNextImage()
         {
-            if (GalleryIndex == ShotImagesArray.Length-1) return;
+            if (GalleryIndex >= ShotImages.Length() -1) return;
             else
             {
                 GalleryIndex++;
-                ReadScreenShotFileAndShow(galleryToShow, ShotImagesArray[GalleryIndex]);
+                ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
             }
         }
         public void GalleryPrevImage()
         {
-            if (GalleryIndex == 0) return;
+            if (GalleryIndex <= 0) return;
             else
             {
                 GalleryIndex--;
-                ReadScreenShotFileAndShow(galleryToShow, ShotImagesArray[GalleryIndex]);
+                ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
             }
         }
         public void GalleryExit()
@@ -382,11 +384,46 @@ namespace Rito.Tests
         }
         public void ShareImage()
         {
-            string path = ShotImagesArray[GalleryIndex];
+            string path = ShotImages.getData(GalleryIndex);
             if (File.Exists(path))
             {
                 new NativeShare().AddFile(path).Share();
             }
+        }
+        public void DeleteImage()
+        {
+            string path = ShotImages.getData(GalleryIndex);
+            if(File.Exists(path))
+            {
+                File.Delete(path);
+                ShotImages.Remove(path);
+                if (ShotImages.isEmpty())
+                {
+                    setDefaultImagetoGallery();
+                    GalleryIndex = 0;
+                }
+                
+
+                else
+                {
+
+                    if (GalleryIndex >= ShotImages.Length())
+                    {
+                        GalleryIndex=ShotImages.Length()-1;
+                    }
+                    ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
+
+                }
+
+
+
+
+            }
+        }
+        private void setDefaultImagetoGallery()
+        {
+            galleryToShow.sprite = null;
+            imageToShow.sprite = null;
         }
         public void openMenu()
         {
@@ -405,8 +442,30 @@ namespace Rito.Tests
         }
         public void KUScale(Slider slider)
         {
-            GameObject.Find("KU_QR1").transform.localScale = new Vector3(0.5f + slider.value, 0.5f + slider.value, 0.5f + slider.value);
+            GameObject.Find("KU_QR1").transform.localScale = new Vector3(slider.value, slider.value, slider.value);
         }
+        public void isWithUI(Toggle toggle)
+        {
+            if (toggle.isOn)
+            {
+                screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotWithoutUI);
+                screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotFull);
+            }
+            else
+            {
+                screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotFull);
+                screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
+            }
+        }
+       
+        public void changeLight(Slider slider)
+        {
+        }
+
+
+
+
+
         #endregion
     }
 }
