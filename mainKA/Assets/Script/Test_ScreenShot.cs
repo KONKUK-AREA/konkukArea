@@ -403,9 +403,9 @@ namespace Rito.Tests
 
             }
         }
-        public void KUScale(int scale)
+        public void KUScale(Slider slider)
         {
-            GameObject.Find("KU_QR1").transform.localScale = new Vector3(0.5f + 0.5f * scale, 0.5f + 0.5f * scale, 0.5f + 0.5f * scale);
+            GameObject.Find("KU_QR1").transform.localScale = new Vector3(0.5f + slider.value, 0.5f + slider.value, 0.5f + slider.value);
         }
         #endregion
     }
