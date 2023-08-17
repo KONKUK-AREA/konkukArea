@@ -83,12 +83,24 @@ namespace Rito.Tests
         #region .
         private void Awake()
         {
+#if UNITY_ANDROID
+            CheckAndroidPermissionAndDo(Permission.ExternalStorageWrite, () =>
+            {
+                screenShotButton.onClick.AddListener(TakeScreenShotFull);
+                screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
+                readAndShowButton.onClick.AddListener(ReadScreenShotAndShow);
+                openGallery.onClick.AddListener(imageOpen);
+                _ARcamera = GetComponent<Camera>();
+                Gallery.GetComponentInChildren<Image>().rectTransform.localScale = GameObject.Find("Canvas").GetComponent<RectTransform>().localScale;
+            });
+#else
             screenShotButton.onClick.AddListener(TakeScreenShotFull);
             screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
             readAndShowButton.onClick.AddListener(ReadScreenShotAndShow);
             openGallery.onClick.AddListener(imageOpen);
             _ARcamera = GetComponent<Camera>();
             Gallery.GetComponentInChildren<Image>().rectTransform.localScale = GameObject.Find("Canvas").GetComponent<RectTransform>().localScale;
+#endif
         }
         #endregion
         /***********************************************************************
@@ -442,7 +454,7 @@ namespace Rito.Tests
         }
         public void KUScale(Slider slider)
         {
-            GameObject.Find("KU_QR1").transform.localScale = new Vector3(slider.value, slider.value, slider.value);
+            GameObject.FindWithTag("KU").transform.localScale = new Vector3(slider.value, slider.value, slider.value);
         }
         public void isWithUI(Toggle toggle)
         {
