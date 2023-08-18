@@ -4,10 +4,11 @@ using UnityEngine;
 
 public class KUFirstScale : MonoBehaviour
 {
+    public float scale;
     // Start is called before the first frame update
     void Start()
     {
-        this.transform.localScale = Vector3.one * 0.5f;
+        this.transform.localScale = Vector3.one * scale;
     }
 
     // Update is called once per frame

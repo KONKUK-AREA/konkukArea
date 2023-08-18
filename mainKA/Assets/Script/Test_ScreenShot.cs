@@ -11,6 +11,8 @@ using UnityEngine.Networking;
 using UnityEngine.EventSystems;
 using UnityEngine.XR.ARFoundation;
 using System.Security.Cryptography;
+using Unity.VisualScripting;
+using UnityEngine.PlayerLoop;
 
 
 
@@ -36,8 +38,7 @@ namespace Rito.Tests
         public Button openGallery;      // 갤러리 앱 열기
         public Image imageToShow;        // 띄울 이미지 컴포넌트
         public Image galleryToShow;
-        public ScreenShotFlash flash;
-
+        public GameObject flashObject;
         public int CameraRatio = 0; // 카메라 비율 관리 변수
         public string folderName = "ScreenShots";
         public string fileName = "MyScreenShot";
@@ -58,6 +59,8 @@ namespace Rito.Tests
         [SerializeField]
         private GameObject Menu;
         private Camera _ARcamera;
+        private GameObject canvas;
+        private bool isFinishCapture = false;
         private string RootPath
         {
             get
@@ -83,12 +86,21 @@ namespace Rito.Tests
         #region .
         private void Awake()
         {
+            canvas = GameObject.Find("Canvas");
+            screenShotWithoutUIButton.onClick.AddListener(StartFlash);
+            screenShotButton.onClick.AddListener(StartFlash);
             screenShotButton.onClick.AddListener(TakeScreenShotFull);
+
             screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
             readAndShowButton.onClick.AddListener(ReadScreenShotAndShow);
             openGallery.onClick.AddListener(imageOpen);
             _ARcamera = GetComponent<Camera>();
-            Gallery.GetComponentInChildren<Image>().rectTransform.localScale = GameObject.Find("Canvas").GetComponent<RectTransform>().localScale;
+            Gallery.GetComponentInChildren<Image>().rectTransform.localScale = canvas.GetComponent<RectTransform>().localScale;
+            foreach(GameObject obj in GameObject.FindGameObjectsWithTag("GalleryBack"))
+            {
+                RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+                obj.GetComponent<RectTransform>().sizeDelta = new Vector2(canvasRect.rect.width, canvasRect.rect.height);
+            }
 #if UNITY_ANDROID
             CheckAndroidPermissionAndDo(Permission.ExternalStorageWrite, () => { });
             CheckAndroidPermissionAndDo(Permission.ExternalStorageRead, () => { });
@@ -169,6 +181,7 @@ namespace Rito.Tests
             }
         }
 
+
 #if UNITY_ANDROID
         //안드로이드 - 권한 확인하고, 승인시 동작 수행하기
         private void CheckAndroidPermissionAndDo(string permission, Action actionIfPermissionGranted)
@@ -215,6 +228,16 @@ namespace Rito.Tests
             }
             int PosY = (Screen.height - height)/2;
             string totalPath = TotalPath; // 프로퍼티 참조 시 시간에 따라 이름이 결정되므로 캐싱
+            if (File.Exists(totalPath))
+            {
+                string temp = totalPath;
+                int i = 0;
+                do
+                {
+                    totalPath = temp + "("+(++i)+")";
+                   
+                }while(File.Exists(totalPath));
+            }
             Texture2D screenTex = new Texture2D(width, height, TextureFormat.RGB24, false);
             Rect area = new Rect(0f, PosY, width, height);
             Debug.Log(area);
@@ -241,19 +264,17 @@ namespace Rito.Tests
             }
 
             // 마무리 작업
-            Destroy(screenTex);
-
             if (succeeded)
             {
                 Debug.Log($"Screen Shot Saved : {totalPath}");
-                flash.Show(); // 화면 번쩍임 효과
                 lastSavedPath = totalPath; // 최근 경로에 저장
+                ShotImages.Push(totalPath);
+                RefreshAndroidGallery(totalPath);
+                ReadScreenShotAndShow();
             }
 
             // 갤러리 갱신
-            ShotImages.Push(totalPath);
-            RefreshAndroidGallery(totalPath);
-            ReadScreenShotAndShow();
+
         }
 
         [System.Diagnostics.Conditional("UNITY_ANDROID")]
@@ -287,16 +308,15 @@ namespace Rito.Tests
                 Debug.LogWarning($"{totalPath} 파일이 존재하지 않습니다.");
                 return;
             }
-
+            /*
             // 기존의 텍스쳐 소스 제거
             if (_imageTexture != null)
                 Destroy(_imageTexture);
             if (destination.sprite != null)
             {
-                Destroy(destination.sprite);
                 destination.sprite = null;
             }
-
+            */
             // 저장된 스크린샷 파일 경로로부터 읽어오기
             try
             {
@@ -323,6 +343,7 @@ namespace Rito.Tests
 
             Debug.Log("ShotImages : "+ShotImages);
             GalleryIndex = 0;
+            if(!ShotImages.isEmpty())
             ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
             Gallery.SetActive(true);
         }
@@ -354,17 +375,15 @@ namespace Rito.Tests
             string folderPath = FolderPath;
             string totalPath = path;
 
-
+            /*
             // 기존의 텍스쳐 소스 제거
             if (_galleryTexture != null)
                 Destroy(_galleryTexture);
-            Destroy(destination.sprite);
             if (destination.sprite != null)
             {
-
                 destination.sprite = null;
             }
-
+            */
             // 저장된 스크린샷 파일 경로로부터 읽어오기
             try
             {
@@ -389,6 +408,7 @@ namespace Rito.Tests
         }
         public void ShareImage()
         {
+            if (ShotImages.isEmpty()) return;
             string path = ShotImages.getData(GalleryIndex);
             if (File.Exists(path))
             {
@@ -397,6 +417,7 @@ namespace Rito.Tests
         }
         public void DeleteImage()
         {
+            if (ShotImages.isEmpty()) return;
             string path = ShotImages.getData(GalleryIndex);
             if(File.Exists(path))
             {
@@ -447,18 +468,29 @@ namespace Rito.Tests
         }
         public void KUScale(Slider slider)
         {
-            GameObject.Find("KU_QR1").transform.localScale = new Vector3(slider.value, slider.value, slider.value);
+            GameObject ku = GameObject.FindWithTag("KU");
+            if (ku.name.Equals("KU_QR1"))
+            {
+                ku.transform.localScale = new Vector3(slider.value, slider.value, slider.value);
+            }
+            else if (ku.name.Equals("KU_QR2"))
+            {
+                ku.transform.localScale = new Vector3(slider.value/5f, slider.value/5f, slider.value/5f);
+            }
+
         }
         public void isWithUI(Toggle toggle)
         {
             if (toggle.isOn)
             {
                 screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotWithoutUI);
+                screenShotWithoutUIButton.onClick.RemoveListener(StartFlash);
                 screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotFull);
             }
             else
             {
                 screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotFull);
+                screenShotWithoutUIButton.onClick.AddListener(StartFlash);
                 screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
             }
         }
@@ -466,11 +498,19 @@ namespace Rito.Tests
         public void changeLight(Slider slider)
         {
         }
+        IEnumerator FlashEffect()
+        {
+            flashObject.SetActive(true);
+            yield return new WaitForSeconds(0.15f);
+            flashObject.SetActive(false);
+        }
+        
 
+        public void StartFlash()
+        {
+            StartCoroutine("FlashEffect");
 
-
-
-
-#endregion
+        }
+        #endregion
     }
 }

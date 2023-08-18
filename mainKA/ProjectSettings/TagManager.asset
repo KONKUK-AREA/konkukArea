@@ -6,6 +6,7 @@ TagManager:
   tags:
   - KU
   - GalleryBack
+  - Flash
   layers:
   - Default
   - TransparentFX
