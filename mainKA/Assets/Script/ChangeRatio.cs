@@ -6,25 +6,34 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
-namespace Rito.Tests{
-
-
-public class ChangeRatio : MonoBehaviour
+namespace Rito.Tests
 {
-    [SerializeField]
-    private GameObject _Btn;
-    [SerializeField]
-    private GameObject[] Btns;
-    [SerializeField]
-    private RectTransform Selected;
+
+
+    public class ChangeRatio : MonoBehaviour
+    {
+        [SerializeField]
+        private GameObject _Btn;
+        [SerializeField]
+        private GameObject[] Btns;
+        [SerializeField]
+        private RectTransform Selected;
         [SerializeField]
         private RectTransform TopFrame;
         [SerializeField]
         private RectTransform BottomFrame;
+        [SerializeField]
+        private GameObject Filter_Top;
+        [SerializeField]
+        private GameObject Filter_Bot;
+        [SerializeField]
+        private GameObject Filter;
         GameObject button;
         Vector2 startSelectedPos;
         GameObject cameraFrame;
         GameObject canvas;
+        private RectTransform FrameFIlterTop;
+        private RectTransform FrameFIlterBot;
         private void Start()
         {
             startSelectedPos = Selected.anchoredPosition;
@@ -34,26 +43,42 @@ public class ChangeRatio : MonoBehaviour
             cameraFrame = GameObject.Find("CameraFrame");
             canvas = GameObject.Find("Canvas");
             cameraFrame.GetComponent<RectTransform>().sizeDelta = canvas.GetComponent<RectTransform>().sizeDelta;
+            Filter.GetComponent<RectTransform>().sizeDelta = canvas.GetComponent<RectTransform>().sizeDelta;
+            FrameFIlterTop = Filter_Top.GetComponent<RectTransform>();
+            FrameFIlterBot = Filter_Bot.GetComponent<RectTransform>();
             changeRatio(0);
         }
-        public void openRatio(){
-        button = EventSystem.current.currentSelectedGameObject;
-        if(!_Btn.activeSelf){
-            _Btn.SetActive(true);
-                button.transform.localEulerAngles = new Vector3(0, 0, 180);
+        private void SetFilterSize()
+        {
+            float width = canvas.GetComponent<RectTransform>().rect.width;
+            float ratio = 1620f / width;
+            FrameFIlterTop.sizeDelta = new Vector2((int)width, (int)(1000f / ratio));
+            FrameFIlterBot.GetComponent<RectTransform>().sizeDelta = new Vector2((int)width, (int)(1400f / ratio));
+
         }
-        else{
-            _Btn.SetActive(false);
+        public void openRatio()
+        {
+            button = EventSystem.current.currentSelectedGameObject;
+            if (!_Btn.activeSelf)
+            {
+                _Btn.SetActive(true);
+                button.transform.localEulerAngles = new Vector3(0, 0, 180);
+            }
+            else
+            {
+                _Btn.SetActive(false);
                 button.transform.localEulerAngles = new Vector3(0, 0, 0);
 
             }
         }
-    public void changeRatio(int ratio){
-        GameObject obj = GameObject.Find("AR Camera");
-        obj.GetComponent<Test_ScreenShot>().CameraRatio = ratio;
-        Vector2 setPos = new Vector2(200 * ratio, 0);
+        public void changeRatio(int ratio)
+        {
+            GameObject obj = GameObject.Find("AR Camera");
+           
+            obj.GetComponent<Test_ScreenShot>().CameraRatio = ratio;
+            Vector2 setPos = new Vector2(200 * ratio, 0);
             Selected.anchoredPosition = startSelectedPos + setPos;
-            float width, height=0;
+            float width, height = 0;
             width = cameraFrame.GetComponent<RectTransform>().rect.width;
 
             switch (ratio)
@@ -73,18 +98,20 @@ public class ChangeRatio : MonoBehaviour
             Debug.Log(area);
             TopFrame.sizeDelta = new Vector2(width, PosY);
             TopFrame.anchoredPosition = new Vector2(0, 0);
+            FrameFIlterTop.anchoredPosition = new Vector2(0, -1*(FrameFIlterTop.rect.height / 2 + PosY/2));
             BottomFrame.sizeDelta = new Vector2(width, PosY);
+            FrameFIlterBot.anchoredPosition = new Vector2(0, (FrameFIlterBot.rect.height / 2 + PosY/2));
             BottomFrame.anchoredPosition = new Vector2(0, 0);
 
-    }
-    private void changeTxtColor(int num)
+        }
+        private void changeTxtColor(int num)
         {
-            foreach(GameObject obj in Btns)
+            foreach (GameObject obj in Btns)
             {
                 obj.GetComponentInChildren<TextMeshProUGUI>().color = Color.black;
             }
             Btns[num].GetComponentInChildren<TextMeshProUGUI>().color = Color.white;
         }
 
-}
+    }
 }

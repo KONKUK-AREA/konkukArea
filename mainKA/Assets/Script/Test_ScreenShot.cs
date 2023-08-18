@@ -25,7 +25,7 @@ using UnityEngine.Android;
 
 namespace Rito.Tests
 {
-    
+
     public class Test_ScreenShot : MonoBehaviour
     {
         /***********************************************************************
@@ -43,7 +43,6 @@ namespace Rito.Tests
         public string folderName = "ScreenShots";
         public string fileName = "MyScreenShot";
         public string extName = "png";
-
         private bool _willTakeScreenShot = false;
         private PathStack ShotImages = new PathStack();
         #endregion
@@ -58,6 +57,12 @@ namespace Rito.Tests
         private GameObject Gallery;
         [SerializeField]
         private GameObject Menu;
+        [SerializeField]
+        private GameObject Filter;
+        [SerializeField]
+        private Image[] FilterImgs;
+        [SerializeField]
+        private Sprite[] FilterSprites;
         private Camera _ARcamera;
         private GameObject canvas;
         private bool isFinishCapture = false;
@@ -75,7 +80,7 @@ namespace Rito.Tests
         }
         private string FolderPath => $"{RootPath}/{folderName}";
         private string TotalPath => $"{FolderPath}/{fileName}_{DateTime.Now.ToString("MMdd_HHmmss")}.{extName}";
-       
+
         private string lastSavedPath;
 
         #endregion
@@ -87,16 +92,18 @@ namespace Rito.Tests
         private void Awake()
         {
             canvas = GameObject.Find("Canvas");
-            screenShotWithoutUIButton.onClick.AddListener(StartFlash);
+            //screenShotWithoutUIButton.onClick.AddListener(StartFlash);
             screenShotButton.onClick.AddListener(StartFlash);
+
             screenShotButton.onClick.AddListener(TakeScreenShotFull);
 
-            screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
+            //screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
+            screenShotWithoutUIButton.onClick.AddListener(CaptureOnlyExcludeUI);
             readAndShowButton.onClick.AddListener(ReadScreenShotAndShow);
             openGallery.onClick.AddListener(imageOpen);
             _ARcamera = GetComponent<Camera>();
             Gallery.GetComponentInChildren<Image>().rectTransform.localScale = canvas.GetComponent<RectTransform>().localScale;
-            foreach(GameObject obj in GameObject.FindGameObjectsWithTag("GalleryBack"))
+            foreach (GameObject obj in GameObject.FindGameObjectsWithTag("GalleryBack"))
             {
                 RectTransform canvasRect = canvas.GetComponent<RectTransform>();
                 obj.GetComponent<RectTransform>().sizeDelta = new Vector2(canvasRect.rect.width, canvasRect.rect.height);
@@ -106,11 +113,11 @@ namespace Rito.Tests
             CheckAndroidPermissionAndDo(Permission.ExternalStorageRead, () => { });
 #endif
         }
-#endregion
+        #endregion
         /***********************************************************************
         *                               Button Event Handlers
         ***********************************************************************/
-#region .
+        #region .
         // UI 포함 전체 화면 캡쳐
         private void TakeScreenShotFull()
         {
@@ -145,7 +152,7 @@ namespace Rito.Tests
         // 갤러리 앱 열기
         private void OpenGalleryApp()
         {
-            
+
             AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
             AndroidJavaObject unityActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
             AndroidJavaClass intentStaticClass = new AndroidJavaClass("android.content.Intent");
@@ -154,15 +161,15 @@ namespace Rito.Tests
             AndroidJavaObject uriObject = uriClass.CallStatic<AndroidJavaObject>("parse", "content://media/internal/images/media");
             AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent", actionView, uriObject);
             unityActivity.Call("startActivity", intent);
-            
 
-   
+
+
         }
-#endregion
+        #endregion
         /***********************************************************************
         *                               Methods
         ***********************************************************************/
-#region .
+        #region .
 
         // UI 포함하여 현재 화면에 보이는 모든 것 캡쳐
         private IEnumerator TakeScreenShotRoutine()
@@ -177,7 +184,8 @@ namespace Rito.Tests
             if (_willTakeScreenShot)
             {
                 _willTakeScreenShot = false;
-                CaptureScreenAndSave();
+                //CaptureScreenAndSave();
+                //CaptureOnlyExcludeUIMain();
             }
         }
 
@@ -226,7 +234,7 @@ namespace Rito.Tests
                 case 3: // full
                     height = Screen.height; break;
             }
-            int PosY = (Screen.height - height)/2;
+            int PosY = (Screen.height - height) / 2;
             string totalPath = TotalPath; // 프로퍼티 참조 시 시간에 따라 이름이 결정되므로 캐싱
             if (File.Exists(totalPath))
             {
@@ -234,9 +242,9 @@ namespace Rito.Tests
                 int i = 0;
                 do
                 {
-                    totalPath = temp + "("+(++i)+")";
-                   
-                }while(File.Exists(totalPath));
+                    totalPath = temp + "(" + (++i) + ")";
+
+                } while (File.Exists(totalPath));
             }
             Texture2D screenTex = new Texture2D(width, height, TextureFormat.RGB24, false);
             Rect area = new Rect(0f, PosY, width, height);
@@ -263,6 +271,97 @@ namespace Rito.Tests
                 Debug.LogWarning(e);
             }
 
+            // 마무리 작업
+            if (succeeded)
+            {
+                Debug.Log($"Screen Shot Saved : {totalPath}");
+                lastSavedPath = totalPath; // 최근 경로에 저장
+                ShotImages.Push(totalPath);
+                RefreshAndroidGallery(totalPath);
+                ReadScreenShotAndShow();
+            }
+
+            // 갤러리 갱신
+
+        }
+        private void CaptureOnlyExcludeUI()
+        {
+            StartCoroutine(CaptureOnlyExcludeUICorutine());
+        }
+        RenderTexture renderTexture;
+        int originalCullingMask;
+        IEnumerator CaptureOnlyExcludeUICorutine()
+        {
+            originalCullingMask = _ARcamera.cullingMask;
+            //LayerMask excludedLayer = LayerMask.GetMask("UI");
+            _ARcamera.cullingMask = ~(1 << LayerMask.NameToLayer("UI"));
+            renderTexture = new RenderTexture(Screen.width, Screen.height, 32);
+            _ARcamera.targetTexture = renderTexture;
+            _ARcamera.Render();
+            yield return new WaitForEndOfFrame();
+            CaptureOnlyExcludeUIMain();
+        }
+        private void CaptureOnlyExcludeUIMain()
+        {
+
+            int width, height = 0; // 사진 가로, 세로
+            width = Screen.width;
+
+            switch (CameraRatio)
+            {
+                case 0: // 16:9
+                    height = (int)(width * (16f / 9f)); break;
+                case 1: // 4: 3
+                    height = (int)(width * (4f / 3f)); break;
+                case 2: // 정방
+                    height = width; break;
+                case 3: // full
+                    height = Screen.height; break;
+            }
+            int PosY = (Screen.height - height) / 2;
+            string totalPath = TotalPath; // 프로퍼티 참조 시 시간에 따라 이름이 결정되므로 캐싱
+            if (File.Exists(totalPath))
+            {
+                string temp = totalPath;
+                int i = 0;
+                do
+                {
+                    totalPath = temp + "(" + (++i) + ")";
+
+                } while (File.Exists(totalPath));
+            }
+
+ 
+            Texture2D screenTex = new Texture2D(width, height, TextureFormat.RGB24, false);
+            Rect area = new Rect(0f, PosY, width, height);
+
+            RenderTexture.active = renderTexture;
+            Debug.Log(area);
+            // 현재 스크린으로부터 지정 영역의 픽셀들을 텍스쳐에 저장
+            screenTex.ReadPixels(area, 0, 0);
+            screenTex.Apply();
+            bool succeeded = true;
+            try
+            {
+                // 폴더가 존재하지 않으면 새로 생성
+                if (Directory.Exists(FolderPath) == false)
+                {
+                    Directory.CreateDirectory(FolderPath);
+                }
+
+                // 스크린샷 저장
+                File.WriteAllBytes(totalPath, screenTex.EncodeToPNG());
+            }
+            catch (Exception e)
+            {
+                succeeded = false;
+                Debug.LogWarning($"Screen Shot Save Failed : {totalPath}");
+                Debug.LogWarning(e);
+            }
+            _ARcamera.targetTexture = null;
+            RenderTexture.active = null;
+            Destroy(renderTexture);
+            _ARcamera.cullingMask = originalCullingMask;
             // 마무리 작업
             if (succeeded)
             {
@@ -341,16 +440,16 @@ namespace Rito.Tests
         public void imageOpen()
         {
 
-            Debug.Log("ShotImages : "+ShotImages);
+            Debug.Log("ShotImages : " + ShotImages);
             GalleryIndex = 0;
-            if(!ShotImages.isEmpty())
-            ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
+            if (!ShotImages.isEmpty())
+                ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
             Gallery.SetActive(true);
         }
         int GalleryIndex;
         public void GalleryNextImage()
         {
-            if (GalleryIndex >= ShotImages.Length() -1) return;
+            if (GalleryIndex >= ShotImages.Length() - 1) return;
             else
             {
                 GalleryIndex++;
@@ -419,7 +518,7 @@ namespace Rito.Tests
         {
             if (ShotImages.isEmpty()) return;
             string path = ShotImages.getData(GalleryIndex);
-            if(File.Exists(path))
+            if (File.Exists(path))
             {
                 File.Delete(path);
                 ShotImages.Remove(path);
@@ -428,14 +527,14 @@ namespace Rito.Tests
                     setDefaultImagetoGallery();
                     GalleryIndex = 0;
                 }
-                
+
 
                 else
                 {
 
                     if (GalleryIndex >= ShotImages.Length())
                     {
-                        GalleryIndex=ShotImages.Length()-1;
+                        GalleryIndex = ShotImages.Length() - 1;
                     }
                     ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
 
@@ -456,7 +555,7 @@ namespace Rito.Tests
             GameObject button = EventSystem.current.currentSelectedGameObject;
             if (!Menu.activeSelf)
             {
-                Menu .SetActive(true);
+                Menu.SetActive(true);
                 button.transform.localEulerAngles = new Vector3(0, 0, 0);
             }
             else
@@ -475,7 +574,7 @@ namespace Rito.Tests
             }
             else if (ku.name.Equals("KU_QR2"))
             {
-                ku.transform.localScale = new Vector3(slider.value/5f, slider.value/5f, slider.value/5f);
+                ku.transform.localScale = new Vector3(slider.value / 5f, slider.value / 5f, slider.value / 5f);
             }
 
         }
@@ -483,18 +582,20 @@ namespace Rito.Tests
         {
             if (toggle.isOn)
             {
-                screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotWithoutUI);
-                screenShotWithoutUIButton.onClick.RemoveListener(StartFlash);
+                //screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotWithoutUI);
+                screenShotWithoutUIButton.onClick.RemoveListener(CaptureOnlyExcludeUI);
+                //screenShotWithoutUIButton.onClick.RemoveListener(StartFlash);
                 screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotFull);
             }
             else
             {
                 screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotFull);
-                screenShotWithoutUIButton.onClick.AddListener(StartFlash);
-                screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
+                //screenShotWithoutUIButton.onClick.AddListener(StartFlash);
+                //screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
+                screenShotWithoutUIButton.onClick.AddListener(CaptureOnlyExcludeUI);
             }
         }
-       
+
         public void changeLight(Slider slider)
         {
         }
@@ -504,12 +605,22 @@ namespace Rito.Tests
             yield return new WaitForSeconds(0.15f);
             flashObject.SetActive(false);
         }
-        
+
 
         public void StartFlash()
         {
             StartCoroutine("FlashEffect");
 
+        }
+        public void FilterSet(int i)
+        {
+            if (i == 2) Filter.SetActive(false);
+            else
+            {
+                FilterImgs[0].sprite = FilterSprites[i * 2];
+                FilterImgs[1].sprite = FilterSprites[i * 2 + 1];
+                Filter.SetActive(true);
+            }
         }
         #endregion
     }
