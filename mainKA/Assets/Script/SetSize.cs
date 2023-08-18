@@ -4,10 +4,12 @@ using UnityEngine;
 
 public class SetSize : MonoBehaviour
 {
+    private RectTransform canvas;
     // Start is called before the first frame update
     void Start()
     {
-        this.GetComponent<RectTransform>().sizeDelta = new Vector2(Screen.width, Screen.height);
+        canvas = GameObject.Find("Canvas").GetComponent<RectTransform>();
+        this.GetComponent<RectTransform>().sizeDelta = new Vector2(canvas.rect.width, canvas.rect.height);
     }
 
     // Update is called once per frame

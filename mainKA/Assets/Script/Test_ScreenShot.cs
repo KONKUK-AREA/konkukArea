@@ -89,12 +89,16 @@ namespace Rito.Tests
             openGallery.onClick.AddListener(imageOpen);
             _ARcamera = GetComponent<Camera>();
             Gallery.GetComponentInChildren<Image>().rectTransform.localScale = GameObject.Find("Canvas").GetComponent<RectTransform>().localScale;
+#if UNITY_ANDROID
+            CheckAndroidPermissionAndDo(Permission.ExternalStorageWrite, () => { });
+            CheckAndroidPermissionAndDo(Permission.ExternalStorageRead, () => { });
+#endif
         }
-        #endregion
+#endregion
         /***********************************************************************
         *                               Button Event Handlers
         ***********************************************************************/
-        #region .
+#region .
         // UI 포함 전체 화면 캡쳐
         private void TakeScreenShotFull()
         {
@@ -142,11 +146,11 @@ namespace Rito.Tests
 
    
         }
-        #endregion
+#endregion
         /***********************************************************************
         *                               Methods
         ***********************************************************************/
-        #region .
+#region .
 
         // UI 포함하여 현재 화면에 보이는 모든 것 캡쳐
         private IEnumerator TakeScreenShotRoutine()
@@ -316,11 +320,11 @@ namespace Rito.Tests
         }
         public void imageOpen()
         {
-            Gallery.SetActive(true);
+
             Debug.Log("ShotImages : "+ShotImages);
             GalleryIndex = 0;
             ReadScreenShotFileAndShow(galleryToShow, ShotImages.getData(GalleryIndex));
-
+            Gallery.SetActive(true);
         }
         int GalleryIndex;
         public void GalleryNextImage()
@@ -354,9 +358,10 @@ namespace Rito.Tests
             // 기존의 텍스쳐 소스 제거
             if (_galleryTexture != null)
                 Destroy(_galleryTexture);
+            Destroy(destination.sprite);
             if (destination.sprite != null)
             {
-                Destroy(destination.sprite);
+
                 destination.sprite = null;
             }
 
@@ -466,6 +471,6 @@ namespace Rito.Tests
 
 
 
-        #endregion
+#endregion
     }
 }

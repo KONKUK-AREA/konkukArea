@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 2
   tags:
   - KU
+  - GalleryBack
   layers:
   - Default
   - TransparentFX

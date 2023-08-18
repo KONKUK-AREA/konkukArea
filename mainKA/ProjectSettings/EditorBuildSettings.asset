@@ -12,5 +12,5 @@ EditorBuildSettings:
     path: Assets/Scenes/Scene_Camera_0705.unity
     guid: 5a321d4331201874ba3523e961fcfb2f
   m_configObjects:
-    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: ff8fb48213266574badb47fd7a93c49a, type: 2}
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 8c30a1b7e05acd0408d24ba489014c62, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: d6d48617b729a814385f0df217e19c87, type: 2}
