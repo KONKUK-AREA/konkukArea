@@ -92,7 +92,7 @@ namespace Rito.Tests
         private void Awake()
         {
             canvas = GameObject.Find("Canvas");
-            //screenShotWithoutUIButton.onClick.AddListener(StartFlash);
+            screenShotWithoutUIButton.onClick.AddListener(StartFlash);
             screenShotButton.onClick.AddListener(StartFlash);
 
             screenShotButton.onClick.AddListener(TakeScreenShotFull);
@@ -286,7 +286,11 @@ namespace Rito.Tests
         }
         private void CaptureOnlyExcludeUI()
         {
+#if UNITY_ANDROID
+            CheckAndroidPermissionAndDo(Permission.ExternalStorageWrite, () => StartCoroutine(CaptureOnlyExcludeUICorutine()));
+#else
             StartCoroutine(CaptureOnlyExcludeUICorutine());
+#endif
         }
         RenderTexture renderTexture;
         int originalCullingMask;
@@ -584,13 +588,13 @@ namespace Rito.Tests
             {
                 //screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotWithoutUI);
                 screenShotWithoutUIButton.onClick.RemoveListener(CaptureOnlyExcludeUI);
-                //screenShotWithoutUIButton.onClick.RemoveListener(StartFlash);
+                screenShotWithoutUIButton.onClick.RemoveListener(StartFlash);
                 screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotFull);
             }
             else
             {
                 screenShotWithoutUIButton.onClick.RemoveListener(TakeScreenShotFull);
-                //screenShotWithoutUIButton.onClick.AddListener(StartFlash);
+                screenShotWithoutUIButton.onClick.AddListener(StartFlash);
                 //screenShotWithoutUIButton.onClick.AddListener(TakeScreenShotWithoutUI);
                 screenShotWithoutUIButton.onClick.AddListener(CaptureOnlyExcludeUI);
             }
@@ -622,6 +626,7 @@ namespace Rito.Tests
                 Filter.SetActive(true);
             }
         }
+
         #endregion
     }
 }
