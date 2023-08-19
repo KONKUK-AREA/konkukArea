@@ -28,6 +28,10 @@ namespace Rito.Tests
         private GameObject Filter_Bot;
         [SerializeField]
         private GameObject Filter;
+        [SerializeField]
+        private GameObject GalleryBackground;
+        [SerializeField]
+        private GameObject GalleryImage;
         GameObject button;
         Vector2 startSelectedPos;
         GameObject cameraFrame;
@@ -44,16 +48,19 @@ namespace Rito.Tests
             canvas = GameObject.Find("Canvas");
             cameraFrame.GetComponent<RectTransform>().sizeDelta = canvas.GetComponent<RectTransform>().sizeDelta;
             Filter.GetComponent<RectTransform>().sizeDelta = canvas.GetComponent<RectTransform>().sizeDelta;
+            GalleryBackground.GetComponent<RectTransform>().sizeDelta = canvas.GetComponent<RectTransform>().sizeDelta;
+            GalleryImage.GetComponent<RectTransform>().sizeDelta = new Vector2(canvas.GetComponent<RectTransform>().sizeDelta.x, canvas.GetComponent<RectTransform>().sizeDelta.x * 1.42f);
             FrameFIlterTop = Filter_Top.GetComponent<RectTransform>();
             FrameFIlterBot = Filter_Bot.GetComponent<RectTransform>();
+            SetFilterSize();
             changeRatio(0);
         }
         private void SetFilterSize()
         {
             float width = canvas.GetComponent<RectTransform>().rect.width;
             float ratio = 1620f / width;
-            FrameFIlterTop.sizeDelta = new Vector2((int)width, (int)(1000f / ratio));
-            FrameFIlterBot.GetComponent<RectTransform>().sizeDelta = new Vector2((int)width, (int)(1400f / ratio));
+            FrameFIlterTop.sizeDelta = new Vector2(width, (1000f / ratio));
+            FrameFIlterBot.GetComponent<RectTransform>().sizeDelta = new Vector2(width, (1400f / ratio));
 
         }
         public void openRatio()
@@ -96,12 +103,17 @@ namespace Rito.Tests
             changeTxtColor(ratio);
             Rect area = new Rect(0f, PosY / 4f, width, height);
             Debug.Log(area);
-            TopFrame.sizeDelta = new Vector2(width, PosY);
+            TopFrame.sizeDelta = new Vector2(width+100, PosY);
             TopFrame.anchoredPosition = new Vector2(0, 0);
-            FrameFIlterTop.anchoredPosition = new Vector2(0, -1*(FrameFIlterTop.rect.height / 2 + PosY/2));
-            BottomFrame.sizeDelta = new Vector2(width, PosY);
-            FrameFIlterBot.anchoredPosition = new Vector2(0, (FrameFIlterBot.rect.height / 2 + PosY/2));
+            FrameFIlterTop.anchoredPosition = new Vector2(0, -1*(FrameFIlterTop.rect.height / 2f + PosY/2f));
+            BottomFrame.sizeDelta = new Vector2(width+10, PosY);
+            FrameFIlterBot.anchoredPosition = new Vector2(0, (FrameFIlterBot.rect.height / 2f + PosY/2f));
             BottomFrame.anchoredPosition = new Vector2(0, 0);
+            Debug.Log("¸ÞÅ¸¸ù µð¹ö±ë : " + Screen.width + " " + Screen.height);
+            Debug.Log("¸ÞÅ¸¸ù µð¹ö±ë TopFrame : " + TopFrame.sizeDelta + " " + TopFrame.anchoredPosition);
+            Debug.Log("¸ÞÅ¸¸ù µð¹ö±ë BotFrame : " + BottomFrame.sizeDelta + " " + BottomFrame.anchoredPosition);
+            Debug.Log("¸ÞÅ¸¸ù µð¹ö±ë TopFrame : " + FrameFIlterTop.anchoredPosition);
+            Debug.Log("¸ÞÅ¸¸ù µð¹ö±ë TopFrame : " + FrameFIlterBot.anchoredPosition);
 
         }
         private void changeTxtColor(int num)
