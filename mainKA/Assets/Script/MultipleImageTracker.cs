@@ -18,6 +18,7 @@ public class MultipleImageTracker : MonoBehaviour
     private GameObject[] Btns;
     private bool isFirstSpawn = true;
     private Dictionary<string, GameObject> spanwedObjects;
+    public bool isShow = true;
 
     private void Awake () 
     {
@@ -37,17 +38,33 @@ public class MultipleImageTracker : MonoBehaviour
     }
         void UpdateSpawnObject(ARTrackedImage trackedImage)
     {
-        string referenceImageName = trackedImage.referenceImage.name;   // 레퍼런스 이미지와 불러올 오브젝트의 string이름이 같아야 불러오게 됨
-        spanwedObjects[referenceImageName].transform.position = trackedImage.transform.position;        
-        spanwedObjects[referenceImageName].transform.rotation = trackedImage.transform.rotation;
+        if (isShow)
+        {
+            string referenceImageName = trackedImage.referenceImage.name;   // 레퍼런스 이미지와 불러올 오브젝트의 string이름이 같아야 불러오게 됨
+            spanwedObjects[referenceImageName].transform.position = trackedImage.transform.position;
+            spanwedObjects[referenceImageName].transform.rotation = trackedImage.transform.rotation;
 
-        spanwedObjects[referenceImageName].SetActive(true); 
+            spanwedObjects[referenceImageName].SetActive(true);
+        }
 
 
     }
 
 
-
+    public void StopRender()
+    {
+        isShow = false;
+        foreach(GameObject obj in spanwedObjects.Values)
+        {
+            obj.transform.position = Vector3.zero;
+            obj.SetActive(false);
+        }
+    }
+    public void StartRender()
+    {
+        isShow = true;
+   
+    }
   
 
 

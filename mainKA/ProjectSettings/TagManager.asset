@@ -6,11 +6,12 @@ TagManager:
   tags:
   - KU
   - GalleryBack
+  - Flash
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Filter
   - Water
   - UI
   - 

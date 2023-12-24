@@ -14,7 +14,7 @@ public class TouchGalleryUI : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        gr=GameObject.Find("Canvas").GetComponent<GraphicRaycaster>();
+        gr = GameObject.Find("Canvas").GetComponent<GraphicRaycaster>();
         coroutine = DelayDestroyUI();
     }
 
@@ -47,7 +47,8 @@ public class TouchGalleryUI : MonoBehaviour
 
         if (touch.phase == TouchPhase.Began)
         {
-            if (results[0].gameObject.CompareTag("GalleryBack")){
+            if (results[0].gameObject.CompareTag("GalleryBack"))
+            {
                 isBtn = !isBtn;
                 Btns.SetActive(isBtn);
 

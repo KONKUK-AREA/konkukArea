@@ -1,17 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ScreenShotFlash : MonoBehaviour
 {
     public float duration = 0.3f;
-
-    private UnityEngine.UI.Image _image;
+    private Image _image;
     private float _currentAlpha = 1f;
-
+    private GameObject flash;
     private void Awake()
     {
-        _image = GetComponent<UnityEngine.UI.Image>();
+        flash = GameObject.FindWithTag("Flash");
+        _image = flash.GetComponent<Image>();
     }
     private void Update()
     {
@@ -22,12 +23,12 @@ public class ScreenShotFlash : MonoBehaviour
         _currentAlpha -= Time.unscaledDeltaTime / duration;
 
         if (_currentAlpha < 0f)
-            gameObject.SetActive(false);
+            _image.enabled = false;
     }
 
     public void Show()
     {
         _currentAlpha = 1f;
-        gameObject.SetActive(true);
+        _image.enabled = true;
     }
 }
